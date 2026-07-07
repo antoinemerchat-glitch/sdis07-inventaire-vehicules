@@ -567,6 +567,7 @@ function renderConfig() {
           <button class="btn-ghost" data-action="moveVehicleDown" data-vehicle="${v.id}" ${isLast ? "disabled" : ""} title="Descendre">↓</button>
           <input class="input-inline" data-role="vehicleName" data-vehicle="${v.id}" value="${escapeHtml(v.name)}" placeholder="Nom du véhicule" />
           <input class="input-inline" data-role="vehicleType" data-vehicle="${v.id}" value="${escapeHtml(v.type)}" placeholder="Type / mission" style="color:#5B6770;" />
+          <button class="btn-ghost" data-action="duplicateVehicle" data-vehicle="${v.id}" title="Dupliquer ce véhicule">⧉ Dupliquer</button>
           <button class="danger-btn" data-action="removeVehicle" data-vehicle="${v.id}">🗑</button>
         </div>
 
@@ -648,6 +649,32 @@ function attachHandlers() {
       }
       else if (action === "removeVehicle") {
         configDraft.vehicles = configDraft.vehicles.filter((v) => v.id !== vehicleId);
+        configDirty = true;
+        render();
+      }
+      else if (action === "duplicateVehicle") {
+        const original = configDraft.vehicles.find((v) => v.id === vehicleId);
+        const groupIdMap = new Map();
+        const newGroups = original.groups.map((g) => {
+          const newId = uid();
+          groupIdMap.set(g.id, newId);
+          return { id: newId, name: g.name };
+        });
+        const newItems = original.items.map((it) => ({
+          id: uid(),
+          name: it.name,
+          groupId: it.groupId ? groupIdMap.get(it.groupId) || null : null,
+        }));
+        const copy = {
+          id: uid(),
+          name: original.name + " (copie)",
+          type: original.type,
+          hidden: original.hidden,
+          groups: newGroups,
+          items: newItems,
+        };
+        const i = configDraft.vehicles.findIndex((v) => v.id === vehicleId);
+        configDraft.vehicles.splice(i + 1, 0, copy);
         configDirty = true;
         render();
       }
